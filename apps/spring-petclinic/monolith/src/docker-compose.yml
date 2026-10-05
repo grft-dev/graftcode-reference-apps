@@ -1,0 +1,9 @@
+name: petclinic-monolith
+
+services:
+  backend:
+    build:
+      context: ./ClinicService
+    ports:
+      - "8090:80"
+      - "8091:81"

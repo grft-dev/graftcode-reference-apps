@@ -7,4 +7,4 @@ Two layouts of the same clinic domain.
 | Monolith | [monolith](monolith/README.md) | Java | Expose backend |
 | Microservices | [microservices](microservices/README.md) | Java | Connect services |
 
-Neither variant is ported yet. The READMEs name the original projects and the intended graft. There is no host or consumer in this repository.
+The monolith host and consumer are in [monolith](monolith/README.md). A call through the gateway does not complete; the README records why. The microservices variant is not ported yet.
