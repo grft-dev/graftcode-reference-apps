@@ -1,0 +1,15 @@
+name: petclinic-microservices
+
+services:
+  customers:
+    build:
+      context: ./customers
+    ports:
+      - "8092:80"
+      - "8093:81"
+  vets:
+    build:
+      context: ./vets
+    ports:
+      - "8094:80"
+      - "8095:81"
