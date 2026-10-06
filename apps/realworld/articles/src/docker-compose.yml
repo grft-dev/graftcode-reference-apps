@@ -1,0 +1,32 @@
+name: conduit-articles
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: conduit
+      POSTGRES_PASSWORD: conduit
+      POSTGRES_DB: conduit
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conduit -d conduit"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./ArticleService
+    environment:
+      DATABASE_URL: postgresql://conduit:conduit@postgres:5432/conduit
+      JWT_SECRET: conduit-sample-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8092:80"
+      - "8093:81"
+
+volumes:
+  postgres-data:
