@@ -1,2 +1,4 @@
 target/
-ClinicConsumer/resources/
+ClinicWeb/node_modules/
+ClinicWeb/dist/
+ClinicWeb/.npmrc

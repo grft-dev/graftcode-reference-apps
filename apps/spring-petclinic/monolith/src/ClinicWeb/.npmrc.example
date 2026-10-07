@@ -1,0 +1,2 @@
+# Copy to .npmrc after starting the gateway. Replace YOUR_GUID with the value from http://localhost:8090/npm
+@graft:registry=https://grft.dev/YOUR_GUID__free

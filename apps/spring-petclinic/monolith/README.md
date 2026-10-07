@@ -5,22 +5,22 @@ https://github.com/spring-projects/spring-petclinic
 
 Sources for the owner, pet, and visit slice are taken from commit `500158f732419217507c7656904b8e6aa1bcc0d6` (Apache-2.0). The license is in [`src/ClinicService/LICENSE.txt`](src/ClinicService/LICENSE.txt).
 
-The host and the consumer are in this folder. A call through Graftcode Gateway does not complete. The failure is recorded in `petclinic-monolith-graftcode-blockers.md` at the workspace root.
+The host and the web consumer are in this folder. A call through Graftcode Gateway may not complete end to end. Failures are recorded in `petclinic-monolith-graftcode-blockers.md` at the workspace root.
 
 ## What was changed
 
 - Kept the Petclinic owner, pet, and visit classes, Spring Data repositories, and the H2 `schema.sql` / `data.sql`
-- Added a static `Clinic` facade that delegates to those repositories and to `Owner.addVisit`
+- Collapsed the graft entry point into one `@Service` class, `Clinic`: static methods for the gateway, instance methods and repositories for Spring (no separate facade class)
 - Hosted that JAR with Graftcode Gateway
-- Added `ClinicConsumer`, which calls the generated graft
+- Added `ClinicWeb`, a small Vite app that installs the npm graft and shows graft call results in the browser
 
 Vets, Thymeleaf, and the MVC controllers stay in the original project. They are not in the hosted JAR.
 
 | Application location | Before | With Graftcode | Developer responsibility removed |
 | --- | --- | --- | --- |
-| Owner, pet, and visit UI | Spring MVC controller and Thymeleaf form | `Clinic.getOwner`, `getPets`, `getVisits`, `addVisit` | HTTP routes, form binding, and a handwritten client |
+| Owner, pet, and visit UI | Spring MVC controller and Thymeleaf form | `Clinic.getOwner`, `getPets`, `getVisits`, `addVisit` via npm graft | HTTP routes, form binding, and a handwritten REST client |
 
-`BaseEntity`, `NamedEntity`, and `Person` sit in the `owner` package, and the domain types are package-private. Gateway publishes every public type. The running gateway enabled only `Clinic`, `OwnerDto`, `PetDto`, and `VisitDto`.
+`BaseEntity`, `NamedEntity`, and `Person` sit in the `owner` package, and the domain types are package-private. Gateway publishes every public type. The running gateway should enable only `Clinic`, `OwnerDto`, `PetDto`, and `VisitDto`.
 
 ## Original architecture
 
@@ -28,7 +28,7 @@ Spring Petclinic is one Java process. Owners, pets, visits, and vets share one a
 
 ## Graftcode architecture
 
-`src/ClinicService` is the host. Graftcode Gateway serves calls on container port 80 and Graftcode Vision. H2 stays inside that process; there is no separate database container. `src/ClinicConsumer` is a separate Maven project that installs the graft and calls it.
+`src/ClinicService` is the host. Graftcode Gateway serves calls on container port 80 and Graftcode Vision. H2 stays inside that process; there is no separate database container. `src/ClinicWeb` is a Node project that installs the generated npm graft and calls it from the browser.
 
 On the host, `gg` is the process. The first `Clinic` call starts the Spring context and uses the existing `OwnerRepository`. There is no `spring-boot-starter-web`.
 
@@ -45,7 +45,8 @@ Seed checked against `data.sql`:
 Prerequisites:
 
 - [Docker](https://docs.docker.com/get-docker/) with Docker Compose
-- [JDK 17](https://adoptium.net/) and [Maven](https://maven.apache.org/download.cgi) for the consumer
+- [Node.js](https://nodejs.org/) for `ClinicWeb`
+- [JDK 17](https://adoptium.net/) and [Maven](https://maven.apache.org/download.cgi) only for in-process host tests
 
 From `apps/spring-petclinic/monolith/src`:
 
@@ -58,34 +59,37 @@ Compose publishes port 8090 for calls (`ws://localhost:8090/ws`) and port 8091. 
 Wait until the install snippet is available:
 
 ```bash
-curl http://localhost:8090/maven
+curl http://localhost:8090/npm
 ```
 
-You should see `Clinic`, `OwnerDto`, `PetDto`, and `VisitDto` in Vision. The registry GUID changes every time the container starts. Copy the current repository URL from `http://localhost:8090/maven`. Do not reuse a GUID from an earlier run.
+You should see `Clinic`, `OwnerDto`, `PetDto`, and `VisitDto` in Vision. The registry GUID changes every time the container starts. Copy the current install command from `http://localhost:8090/npm` or Vision. Do not reuse a GUID from an earlier run.
 
-`ClinicService` also has an in-process Spring test (`mvn test` in `src/ClinicService`). That test does not go through the graft.
+In-process host tests (`mvn test` in `src/ClinicService`) exercise Spring and H2 directly. They do not go through the graft.
 
 ## Try it
 
-The feed at `grft.dev` serves grafts only. [`src/ClinicConsumer/pom.xml`](src/ClinicConsumer/pom.xml) reads the registry GUID from Maven property `graft.guid` (default `YOUR_GUID`). Replace it with the GUID from the install snippet.
+The feed at `grft.dev` serves grafts only. Copy the npm install command from Vision (package name follows Maven coordinates, typically `@graft/maven-groupid_org-springframework-samples_artifactid_petclinic-clinic@1.0.0`).
 
-From `src/ClinicConsumer`:
+From `src/ClinicWeb`, point npm at the current registry (replace `YOUR_GUID`):
 
 ```bash
-mvn -q compile exec:java -Dgraft.guid=YOUR_GUID
+echo '@graft:registry=https://grft.dev/YOUR_GUID__free' > .npmrc
+npm install
+npm run dev
 ```
 
-`src/ClinicConsumer/src/main/java/clinic/consumer/Main.java` points the graft at the local gateway and reads the seeded owner, pet, and visit:
+Open the URL Vite prints (typically [http://localhost:5173](http://localhost:5173)). [`src/ClinicWeb/src/main.js`](src/ClinicWeb/src/main.js) calls [`configureGraft()`](src/ClinicWeb/src/graftSetup.js) and runs the owner, pet, and visit scenario. Graft setup (host and `stateless = false`) lives in [`src/ClinicWeb/src/graftSetup.js`](src/ClinicWeb/src/graftSetup.js):
 
-```java
-GraftConfig.host = "ws://localhost:8090/ws";
-GraftConfig.stateless = true;
+```javascript
+import { configureGraft } from "./graftSetup.js";
+import { Clinic } from "@graft/maven-groupid_org-springframework-samples_artifactid_petclinic-clinic";
 
-OwnerDto owner = Clinic.getOwner(1);
-System.out.println("Getting owner 1: " + owner.getFirstName() + " " + owner.getLastName());
+configureGraft(); // GraftConfig.host + GraftConfig.stateless = false
+
+const owner = await Clinic.getOwner(1);
 ```
 
-Expected output once a call can complete:
+Expected output once calls complete:
 
 ```text
 Getting owner 1: George Franklin
@@ -94,9 +98,13 @@ Visit: 2013-01-01 rabies shot
 Getting owner 999: Owner with id 999 not found.
 ```
 
-That output is not what the current gateway returns. On JDK 17 the generated client throws before the call unless the host JAR is also on the consumer classpath. After that JAR is added, the gateway runs `Clinic.getOwner` and Spring Boot fails while starting. Both failures are product blockers; the application was not rewritten to get past them.
+The owner line should match when the gateway and host are up. Pet and visit lines need `getPets` / `getVisits` (array DTOs); they may still fail on a separate product blocker until that is fixed.
 
-`src/run-e2e.ps1` starts Compose, reads the GUID, and runs `ClinicConsumer` tests. Those tests are the cross-boundary path. They fail for the same reason.
+The host includes a **documented sample workaround** for gg binding `NOPLoggerFactory` before Spring Boot starts (`preferLogbackOverGatewayNop()` in `Clinic.service()`). That is not a product fix; see `petclinic-monolith-graftcode-blockers.md` §2.
+
+This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 in `petclinic-graftcode-defects.md` §3 — DTO getters with `stateless: true`). The full browser scenario and Vitest e2e may still fail on defect #4 (arrays `PetDto[]` / `VisitDto[]`). See `petclinic-monolith-graftcode-blockers.md` and `petclinic-graftcode-defects.md`.
+
+Cross-boundary tests: `src/run-e2e.ps1` or `src/run-e2e.sh` starts Compose, writes `ClinicWeb/.npmrc` from `http://localhost:8090/npm`, and runs `npm test` (Vitest through the graft).
 
 Stop the containers with `docker compose down`.
 
@@ -110,11 +118,4 @@ Clinic.getVisits(...)
 Clinic.addVisit(...)
 ```
 
-Imports and `GraftConfig` come from the graft. For this module they were:
-
-```text
-graft.maven.org.springframework.samples.petclinic.owner.Clinic
-graft.maven.petclinic_clinic.GraftConfig
-```
-
-Copy the current snippet from Vision if the package differs.
+Imports and `GraftConfig` come from the npm graft. Copy the current snippet from Vision if the package name differs. The npm graft uses **camelCase** method names.
