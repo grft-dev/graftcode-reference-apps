@@ -126,7 +126,7 @@ That line needs `Visits.read` (visits DB + customers graft). The scripted e2e ru
 
 This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 in `petclinic-graftcode-defects.md` — DTO getters with `stateless: true`). **`VisitLine[]`** with stateful npm matches the monolith (Vitest PASS, 2026-10-12).
 
-The visits host nests a **JVM customers graft client** inside gg. On JDK 17+, the SDK still validates `{user.dir}/resources/maven/.../petclinic-customers` on the **`java.class.path` system property** even when `host` is `ws://` (defect #1). The sample adds that directory in `VisitsService.ensureCustomersModuleOnJavaClasspath()` before the first `Customers` call. gg 1.4.9 hosts JVM with a minimal `java.class.path` (main visits JAR + hypertube core), so manifest `Class-Path` alone is not enough in the container.
+The visits host nests a **JVM customers graft client** inside gg. On JDK 17+, the SDK still validates `{user.dir}/resources/maven/.../petclinic-customers` on the **`java.class.path` system property** even when `host` is `ws://` (defect #1). The sample adds that directory in `CustomersGraftBootstrap` (static classpath setup) before the first `Customers` call. gg 1.4.9 hosts JVM with a minimal `java.class.path` (main visits JAR + hypertube core), so manifest `Class-Path` alone is not enough in the container.
 
 The customers and visits hosts include a **documented sample workaround** for gg binding `NOPLoggerFactory` before Spring Boot starts (`preferLogbackOverGatewayNop()`). That is not a product fix; see `petclinic-graftcode-defects.md` §2. The visits image uses a Maven **thin JAR + `target/dependency/`** layout so Spring Boot starts inside gg (same pattern as customers/vets).
 

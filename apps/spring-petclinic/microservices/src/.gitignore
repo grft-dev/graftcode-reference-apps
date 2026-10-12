@@ -1,2 +1,7 @@
 target/
 visits/resources/
+ClinicWeb/node_modules/
+ClinicWeb/dist/
+ClinicWeb/.npmrc
+visits/_graft_probe/
+visits/META-INF/

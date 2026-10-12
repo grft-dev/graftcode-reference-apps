@@ -1,6 +1,5 @@
 package org.springframework.samples.petclinic.visits;
 
-import org.springframework.samples.petclinic.visits.graft.CustomersGraftBootstrap;
 import org.springframework.samples.petclinic.visits.model.Visits;
 
 final class Main {
@@ -9,8 +8,6 @@ final class Main {
 	}
 
 	public static void main(String[] args) {
-		CustomersGraftBootstrap.ensureReady();
-
 		VisitLine[] visits = Visits.read(7);
 		for (VisitLine visit : visits) {
 			if ("2013-01-01".equals(visit.getDate()) && "rabies shot".equals(visit.getDescription())) {
