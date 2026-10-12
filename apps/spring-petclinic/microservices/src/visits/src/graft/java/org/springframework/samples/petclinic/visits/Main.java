@@ -1,8 +1,7 @@
 package org.springframework.samples.petclinic.visits;
 
+import org.springframework.samples.petclinic.visits.graft.CustomersGraftBootstrap;
 import org.springframework.samples.petclinic.visits.model.Visits;
-
-import graft.maven.petclinic_customers.GraftConfig;
 
 final class Main {
 
@@ -10,8 +9,7 @@ final class Main {
 	}
 
 	public static void main(String[] args) {
-		GraftConfig.host = "ws://localhost:8092/ws";
-		GraftConfig.stateless = false;
+		CustomersGraftBootstrap.ensureReady();
 
 		VisitLine[] visits = Visits.read(7);
 		for (VisitLine visit : visits) {

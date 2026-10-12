@@ -2,9 +2,8 @@ package org.springframework.samples.petclinic.visits;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.samples.petclinic.visits.graft.CustomersGraftBootstrap;
 import org.springframework.samples.petclinic.visits.model.Visits;
-
-import graft.maven.petclinic_customers.GraftConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,11 +11,8 @@ class VisitEndToEndTest {
 
 	@BeforeAll
 	static void pointAtGateway() {
-		String host = "ws://localhost:8092/ws";
-		GraftConfig.host = host;
-		GraftConfig.stateless = false;
-		GraftConfig.setConfig(
-				"name=graft.maven.petclinic_customers; runtime=jvm; host=" + host + "; stateless=false");
+		CustomersGraftBootstrap.configureHostForTests("ws://localhost:8092/ws");
+		CustomersGraftBootstrap.ensureReady();
 	}
 
 	@Test
