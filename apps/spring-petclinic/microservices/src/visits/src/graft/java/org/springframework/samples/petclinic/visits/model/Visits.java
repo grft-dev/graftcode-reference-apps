@@ -1,48 +1,46 @@
 package org.springframework.samples.petclinic.visits.model;
 
-import java.util.List;
-
-import org.springframework.samples.petclinic.visits.VisitLine;
-import org.springframework.samples.petclinic.visits.VisitsSpringBoot;
-
+import org.slf4j.LoggerFactory;
+import org.slf4j.LoggerFactoryFriend;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-
-import graft.maven.org.springframework.samples.petclinic.customers.model.Customers;
-import graft.maven.org.springframework.samples.petclinic.customers.model.OwnerDto;
+import org.springframework.samples.petclinic.visits.VisitLine;
 
 public final class Visits {
 
-	private static volatile VisitRepository repository;
+	private static volatile VisitsService service;
 
 	private Visits() {
 	}
 
 	public static VisitLine[] read(int petId) {
-		List<Visit> stored = repository().findByPetId(petId);
-		OwnerDto owner = Customers.getOwnerForPet(petId);
-		VisitLine[] lines = new VisitLine[stored.size()];
-		for (int i = 0; i < stored.size(); i++) {
-			Visit visit = stored.get(i);
-			lines[i] = new VisitLine(VisitDates.iso(visit.getDate()), visit.getDescription(), owner.getFirstName(),
-					owner.getLastName());
-		}
-		return lines;
+		return service().read(petId);
 	}
 
-	private static VisitRepository repository() {
-		VisitRepository current = repository;
+	private static VisitsService service() {
+		VisitsService current = service;
 		if (current == null) {
 			synchronized (Visits.class) {
-				current = repository;
+				current = service;
 				if (current == null) {
+					preferLogbackOverGatewayNop();
 					ConfigurableApplicationContext context = SpringApplication.run(VisitsSpringBoot.class);
-					current = context.getBean(VisitRepository.class);
-					repository = current;
+					current = context.getBean(VisitsService.class);
+					service = current;
 				}
 			}
 		}
 		return current;
+	}
+
+	/**
+	 * Sample workaround when the host runs inside gg: hypertube-java-core may bind NOPLoggerFactory
+	 * before Spring Boot starts. Product fix belongs in the gg JVM runtime, not in host apps.
+	 */
+	private static void preferLogbackOverGatewayNop() {
+		System.setProperty("slf4j.provider", "ch.qos.logback.classic.spi.LogbackServiceProvider");
+		LoggerFactoryFriend.reset();
+		LoggerFactory.getILoggerFactory();
 	}
 
 }

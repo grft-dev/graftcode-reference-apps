@@ -4,14 +4,14 @@ import org.springframework.samples.petclinic.visits.model.Visits;
 
 import graft.maven.petclinic_customers.GraftConfig;
 
-public final class Main {
+final class Main {
 
 	private Main() {
 	}
 
 	public static void main(String[] args) {
 		GraftConfig.host = "ws://localhost:8092/ws";
-		GraftConfig.stateless = true;
+		GraftConfig.stateless = false;
 
 		VisitLine[] visits = Visits.read(7);
 		for (VisitLine visit : visits) {

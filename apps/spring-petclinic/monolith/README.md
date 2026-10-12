@@ -98,11 +98,11 @@ Visit: 2013-01-01 rabies shot
 Getting owner 999: Owner with id 999 not found.
 ```
 
-The owner line should match when the gateway and host are up. Pet and visit lines need `getPets` / `getVisits` (array DTOs); they may still fail on a separate product blocker until that is fixed.
+When the gateway and host are up, the full output above should match, including pet and visit lines (`getPets` / `getVisits`). Verified 2026-10-12: Vitest e2e in `ClinicWeb` passes 5/5 with **`GraftConfig.stateless = false`** (see `petclinic-graftcode-defects.md` §4). Do not use `stateless = true` for this sample — DTO getters fail (defect #3).
 
 The host includes a **documented sample workaround** for gg binding `NOPLoggerFactory` before Spring Boot starts (`preferLogbackOverGatewayNop()` in `Clinic.service()`). That is not a product fix; see `petclinic-monolith-graftcode-blockers.md` §2.
 
-This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 in `petclinic-graftcode-defects.md` §3 — DTO getters with `stateless: true`). The full browser scenario and Vitest e2e may still fail on defect #4 (arrays `PetDto[]` / `VisitDto[]`). See `petclinic-monolith-graftcode-blockers.md` and `petclinic-graftcode-defects.md`.
+This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 — DTO getters with `stateless: true`). Array returns (`PetDto[]` / `VisitDto[]`) work through the **npm** graft in stateful mode; the JVM graft client may still hit defect #4. See `petclinic-monolith-graftcode-blockers.md` and `petclinic-graftcode-defects.md`.
 
 Cross-boundary tests: `src/run-e2e.ps1` or `src/run-e2e.sh` starts Compose, writes `ClinicWeb/.npmrc` from `http://localhost:8090/npm`, and runs `npm test` (Vitest through the graft).
 

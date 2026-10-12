@@ -13,3 +13,15 @@ services:
     ports:
       - "8094:80"
       - "8095:81"
+  visits:
+    build:
+      context: ./visits
+      args:
+        GRAFT_GUID: ${GRAFT_GUID}
+    depends_on:
+      - customers
+    environment:
+      CUSTOMERS_GRAFT_HOST: ws://customers/ws
+    ports:
+      - "8096:80"
+      - "8097:81"

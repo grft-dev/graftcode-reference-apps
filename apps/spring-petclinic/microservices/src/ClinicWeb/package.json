@@ -1,0 +1,20 @@
+{
+  "name": "petclinic-visits-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "vitest run"
+  },
+  "dependencies": {
+    "@graft/maven-groupid_org-springframework-samples_artifactid_petclinic-visits": "1.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

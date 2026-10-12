@@ -13,7 +13,7 @@ class VisitEndToEndTest {
 	@BeforeAll
 	static void pointAtGateway() {
 		GraftConfig.host = "ws://localhost:8092/ws";
-		GraftConfig.stateless = true;
+		GraftConfig.stateless = false;
 	}
 
 	@Test
