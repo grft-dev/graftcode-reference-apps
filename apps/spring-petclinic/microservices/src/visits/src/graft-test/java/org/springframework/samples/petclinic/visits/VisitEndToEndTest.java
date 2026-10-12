@@ -12,8 +12,11 @@ class VisitEndToEndTest {
 
 	@BeforeAll
 	static void pointAtGateway() {
-		GraftConfig.host = "ws://localhost:8092/ws";
+		String host = "ws://localhost:8092/ws";
+		GraftConfig.host = host;
 		GraftConfig.stateless = false;
+		GraftConfig.setConfig(
+				"name=graft.maven.petclinic_customers; runtime=jvm; host=" + host + "; stateless=false");
 	}
 
 	@Test

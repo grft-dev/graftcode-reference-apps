@@ -49,7 +49,7 @@ if (-not $visitsGuid) {
 
 Write-Output "visits.graft.guid=$visitsGuid"
 $npmrc = "@graft:registry=https://grft.dev/${visitsGuid}__free"
-Set-Content -Path "ClinicWeb\.npmrc" -Value $npmrc -Encoding utf8NoBOM
+Set-Content -Path "ClinicWeb\.npmrc" -Value $npmrc -Encoding utf8
 
 Push-Location ClinicWeb
 try {

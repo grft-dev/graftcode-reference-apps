@@ -5,7 +5,7 @@ https://github.com/spring-petclinic/spring-petclinic-microservices
 
 Sources for the customers, vets, and visits slices are taken from commit `dc9ca15a71189bc4be6c02518d7180232c0555b7` (Apache-2.0). The license is in [`src/LICENSE.txt`](src/LICENSE.txt).
 
-Three Java hosts (`customers`, `vets`, `visits`) and a Vite consumer (`ClinicWeb`) are in this folder. A call through Graftcode Gateway may not complete end to end. Failures are recorded in `petclinic-microservices-graftcode-blockers.md` at the workspace root.
+Three Java hosts (`customers`, `vets`, `visits`) and a Vite consumer (`ClinicWeb`) are in this folder. End-to-end verification (`run-e2e.ps1` / `run-e2e.sh`, **2026-10-12**): **`ClinicWeb` Vitest PASS** and **`VisitEndToEndTest` PASS** with **`GraftConfig.stateless = false`** and **`ws://`** hosts. Product limitations and sample workarounds are in `petclinic-microservices-graftcode-blockers.md` and `petclinic-graftcode-defects.md` at the workspace root.
 
 ## What was changed
 
@@ -122,11 +122,13 @@ Expected output once calls complete:
 Visit: 2013-01-01 rabies shot, owner Jean Coleman
 ```
 
-That line needs `Visits.read` (visits DB + customers graft). It may still fail on product blockers documented in `petclinic-microservices-graftcode-blockers.md` and `petclinic-graftcode-defects.md`.
+That line needs `Visits.read` (visits DB + customers graft). The scripted e2e run reaches it with **stateful** npm and websocket hosts.
 
-This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 in `petclinic-graftcode-defects.md` — DTO getters with `stateless: true`). **`VisitLine[]`** may hit defect #4 (arrays), same class of issue as `PetDto[]` in the monolith.
+This sample sets **`GraftConfig.stateless = false`** on purpose (workaround for defect #3 in `petclinic-graftcode-defects.md` — DTO getters with `stateless: true`). **`VisitLine[]`** with stateful npm matches the monolith (Vitest PASS, 2026-10-12).
 
-The customers and visits hosts include a **documented sample workaround** for gg binding `NOPLoggerFactory` before Spring Boot starts (`preferLogbackOverGatewayNop()`). That is not a product fix; see `petclinic-graftcode-defects.md` §2.
+The visits host nests a **JVM customers graft client** inside gg. On JDK 17+, the SDK still validates `{user.dir}/resources/maven/.../petclinic-customers` on the **`java.class.path` system property** even when `host` is `ws://` (defect #1). The sample adds that directory in `VisitsService.ensureCustomersModuleOnJavaClasspath()` before the first `Customers` call. gg 1.4.9 hosts JVM with a minimal `java.class.path` (main visits JAR + hypertube core), so manifest `Class-Path` alone is not enough in the container.
+
+The customers and visits hosts include a **documented sample workaround** for gg binding `NOPLoggerFactory` before Spring Boot starts (`preferLogbackOverGatewayNop()`). That is not a product fix; see `petclinic-graftcode-defects.md` §2. The visits image uses a Maven **thin JAR + `target/dependency/`** layout so Spring Boot starts inside gg (same pattern as customers/vets).
 
 Optional CLI check (Maven graft client to customers, not the browser path): from `src/visits` with `-Dgraft.guid` from customers Vision, `mvn -q compile exec:java -Dgraft.guid=YOUR_GUID` runs [`Main.java`](src/visits/src/graft/java/org/springframework/samples/petclinic/visits/Main.java).
 

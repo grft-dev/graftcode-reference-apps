@@ -1,5 +1,11 @@
 package org.springframework.samples.petclinic.visits.model;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.samples.petclinic.visits.VisitLine;
@@ -45,10 +51,38 @@ class VisitsService {
 			if (customersGraftConfigured) {
 				return;
 			}
+			ensureCustomersModuleOnJavaClasspath();
 			String host = System.getenv("CUSTOMERS_GRAFT_HOST");
-			GraftConfig.host = (host != null && !host.isBlank()) ? host.trim() : DEFAULT_CUSTOMERS_GRAFT_HOST;
+			host = (host != null && !host.isBlank()) ? host.trim() : DEFAULT_CUSTOMERS_GRAFT_HOST;
+			GraftConfig.host = host;
 			GraftConfig.stateless = false;
+			GraftConfig.setConfig(
+					"name=graft.maven.petclinic_customers; runtime=jvm; host=" + host + "; stateless=false");
 			customersGraftConfigured = true;
+		}
+	}
+
+	/**
+	 * gg 1.4.9 hosts JVM with a minimal {@code java.class.path}; graft SDK still validates
+	 * {@code {user.dir}/resources/maven/.../petclinic-customers} on that property (JDK 17+).
+	 */
+	private static void ensureCustomersModuleOnJavaClasspath() {
+		Path moduleDir = Paths.get(System.getProperty("user.dir"), "resources", "maven",
+				"org.springframework.samples", "petclinic-customers");
+		try {
+			Files.createDirectories(moduleDir);
+		}
+		catch (IOException ignored) {
+			// SDK may create the tree during GraftConfig.init()
+		}
+		String absolute = moduleDir.toAbsolutePath().normalize().toString();
+		String classpath = System.getProperty("java.class.path", "");
+		boolean present = Arrays.stream(classpath.split(File.pathSeparator))
+			.filter(entry -> !entry.isBlank())
+			.anyMatch(entry -> absolute.equals(Paths.get(entry).toAbsolutePath().normalize().toString()));
+		if (!present) {
+			System.setProperty("java.class.path",
+					classpath.isEmpty() ? absolute : classpath + File.pathSeparator + absolute);
 		}
 	}
 
